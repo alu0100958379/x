@@ -1,0 +1,81 @@
+#
+# Shorewall - Sample Rules File for three-interface configuration.
+# Copyright (C) 2006-2015 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------------------------------------
+# For information about entries in this file, type "man shorewall-rules"
+######################################################################################################################################################################################################
+#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME		HEADERS		SWITCH		HELPER
+#							PORT	PORT(S)		DEST		LIMIT		GROUP
+
+#trafico desde red interna a servidores de internet
+ACCEPT		lan		wan:10.6.129.176	tcp	80
+ACCEPT		lan		wan:10.6.129.176	tcp	53
+ACCEPT		lan		wan:10.6.192.176	udp	53
+
+#trafico web y ftp desdde internet a dmz
+ACCEPT		wan		dmz:192.168.3.2		tcp	20
+ACCEPT		wan		dmz:192.168.3.2		tcp	21
+
+
+?SECTION ALL
+?SECTION ESTABLISHED
+?SECTION RELATED
+?SECTION INVALID
+?SECTION UNTRACKED
+#SECTION NEW
+
+#       Don't allow connection pickup from the net
+#
+Invalid(DROP)	wan		all		tcp
+#
+#	Accept DNS connections from the firewall to the Internet
+#
+DNS(ACCEPT)	$FW		wan
+#
+#
+#	Accept HTTPS connections
+#
+HTTPS(ACCEPT)	lan		dmz
+HTTPS(ACCEPT)	wan		dmz
+
+#	Accept SSH connections from the local network to the firewall and DMZ
+#
+SSH(ACCEPT)     lan             $FW
+SSH(ACCEPT)     lan             dmz
+#
+#	DMZ DNS access to the Internet
+#
+DNS(ACCEPT)	dmz		wan
+
+
+# Drop Ping from the "bad" net zone.
+
+Ping(DROP)   	wan             $FW
+
+#
+#       Make ping work bi-directionally between the dmz, net, Firewall and local zone
+#       (assumes that the loc-> net policy is ACCEPT).
+#
+
+Ping(ACCEPT)    lan             $FW
+Ping(ACCEPT)    dmz             $FW
+Ping(ACCEPT)    lan             dmz
+Ping(ACCEPT)    dmz             lan
+Ping(ACCEPT)    dmz             wan
+
+ACCEPT		$FW		wan		icmp
+ACCEPT		$FW		lan		icmp
+ACCEPT		$FW		dmz		icmp
+
+# Uncomment this if using Proxy ARP and static NAT and you want to allow ping from
+# the net zone to the dmz and loc
+
+#Ping(ACCEPT)    net             dmz
+#Ping(ACCEPT)    net             loc
